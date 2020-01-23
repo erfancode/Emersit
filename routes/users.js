@@ -2,37 +2,94 @@ var express = require('express');
 var router = express.Router();
 const db = require("../db");
 
-db.initialize("IEdb", "Users", function(dbCollection) { 
-    // get all items
-    dbCollection.findOne({username : 'erfancode'}, (err, result) => {
-        if (err) throw err;
-        console.log(result);
+var UserCollection;
+var tokens = [];
+
+setTimeout(function() {
+    readCollection();
+},5000);
+
+function readCollection(){
+    db.getCollection('Users', function(dbCollection) { 
+        if(dbCollection != null){
+            console.log('User collection read successfully')
+            UserCollection = dbCollection
+        }
     });
-
-    // << db CRUD routes >>
-
-}, function(err) { // failureCallback
-    throw (err);
-});
-
+}
 
 
 //login 
-router.post("", function(req, res) {
+router.post("/login", function(req, res) {
     const data = req.body;
+
+    const reqPassword = data.password
+    const reqUsername = data.username
+
+    console.log(reqPassword + ' ' + reqUsername)
+
+    if(UserCollection != null){
+        UserCollection.findOne({username : reqUsername, password : reqPassword}, (err, result) => {
+            if (err) 
+                throw err;
+            //read password and check it
+            //return user not found or build a a token and retrun user imformation
+            if(result != null){
+                var token = reqUsername + reqPassword;
+                tokens.push(token)
+                result.token = token
+                return res.json({ user: result, status : 200, description : 'Login successfully' })
+            }
+            else{
+                return res.json({ user: result, status : 200, description : 'Invalid username or password' })
+            }
+            
+        })
+    }
+    else{
+        readCollection()
+        return res.status(500).json({error : 'connection with DB interupted'})
+    }
+
 });
 
 //logout
-router.get("/", function(req, res, next) {
-    // var returnData = {"status" : "error", "description" : "" ,"data" : null};
+router.get("/logout", function(req, res, next) {
+    
+    if (!req.headers.token) {
+        return res.status(403).json({ error: 'No credentials sent!' });
+    }
 
-    // if(formsList != null){
-    //     returnData.status = "success";
-    //     returnData.description = "success";
-    //     returnData.data = formsList;
-    // }
+    var token = req.headers.token;
 
-    // res.json(returnData);
+    if(UserCollection != null){
+        var index = tokens.indexOf(token)
+
+        if(index > -1){
+            tokens.pop(token)
+            return res.status(200).json({ status : 200, description: 'Logout successfully' });
+        }
+        else{
+            return res.status(403).json({ status : 403, description: 'First login!' });
+        }
+    }
+    else{
+        readCollection()
+        return res.status(500).json({error : 'connection with DB interupted'})
+    }
 });
 
-module.exports = router;
+function isValidToken(token, validFunction, invalidFunction){
+    const index = tokens.indexOf(token)
+    if(index > -1){
+        validFunction()
+    }
+    else{
+        invalidFunction()
+    }
+}
+
+module.exports = {
+    router,
+    isValidToken
+}

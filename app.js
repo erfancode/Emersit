@@ -10,11 +10,10 @@ var formsRouter = require('./routes/forms');
 var usersRouter = require('./routes/users');
 var locationsRouter = require('./routes/locations');
 var submitFormRouter = require('./routes/submitForm');
-const db = require("./db");
 
 var app = express();
 
-
+app.use(bodyParser.json());
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -30,7 +29,7 @@ app.use(bodyParser.json());
 
 
 //APIs
-app.use('/api/user', usersRouter);
+app.use('/api/user', usersRouter.router);
 app.use('/api/form', formsRouter);
 app.use('/api/location', locationsRouter);
 app.use('/api/submit', submitFormRouter);
