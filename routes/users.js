@@ -67,11 +67,8 @@ router.get("/logout", function(req, res, next) {
 
         if(index > -1){
             tokens.pop(token)
-            return res.status(200).json({ status : 200, description: 'Logout successfully' });
         }
-        else{
-            return res.status(403).json({ status : 403, description: 'First login!' });
-        }
+        return res.status(200).json({ status : 200, description: 'Logout successfully' });
     }
     else{
         readCollection()
