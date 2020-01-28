@@ -27,11 +27,18 @@ router.post("/submitForm", function(req, res) {
 
     var token = req.headers.token;
 
+
     user.isValidToken(token, function(){
 
         //check for duplicate insert
         //todo
-        appliedFormsCollection.insertOne(newSubmittedForm, function(err) {
+        var dbIn = {
+            form_id: newSubmittedForm.form_id,
+            username: newSubmittedForm.username,
+            data: newSubmittedForm.data
+        };
+
+        appliedFormsCollection.insertOne(dbIn, function(err) {
             if (err) throw err;
             console.log("1 form submitted");
             return res.status(200).json({ status : 200, description: 'Form submitted successfully' });
