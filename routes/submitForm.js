@@ -35,6 +35,9 @@ router.post("/submitForm", function(req, res) {
         var dbIn = {
             form_id: newSubmittedForm.form_id,
             username: newSubmittedForm.username,
+            form_name : newSubmittedForm.form_name,
+            type : newSubmittedForm.type,
+            submit_date : newSubmittedForm.submit_date,
             data: newSubmittedForm.data
         };
 
