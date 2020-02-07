@@ -5,6 +5,7 @@ const db = require("../db");
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcryptjs');
 var config = require('../config');
+ObjectId = require('mongodb').ObjectID;
 
 var UserCollection;
 
@@ -42,7 +43,7 @@ router.post("/login", function(req, res) {
                 var passwordIsValid = bcrypt.compareSync(reqPassword, user.password);
 
                 if(!passwordIsValid){
-                    return res.json({ user: null, status : 201, description : 'Invalid username or password' })
+                    return res.json({ user: null, status : 200, description : 'Invalid username or password' })
                 }
 
                 var token = jwt.sign({ id: user._id }, config.secret, {
@@ -51,10 +52,10 @@ router.post("/login", function(req, res) {
 
                 user.password = null
                 user.token = token
-                return res.json({ user: user, status : 202, description : 'Login successfully' })
+                return res.json({ user: user, status : 200, description : 'Login successfully' })
             }
             else{
-                return res.json({ user: result, status : 203, description : 'Invalid username or password' })
+                return res.json({ user: result, status : 200, description : 'Invalid username or password' })
             }
             
         })
@@ -89,21 +90,23 @@ function isValidToken(token, validFunction, invalidFunction){
 
     jwt.verify(token, config.secret, function(err, decoded) {
         if (err) {
+            console.log("jwt error");
             invalidFunction();
             return
         }
         
-        UserCollection.findById(decoded.id, 
-        { password: 0 }, // projection
-        function (err, user) {
-          if (err){
-            invalidFunction();
-            return
-        }
-          if (!user) {
-            invalidFunction();
-            return
-        }
+        UserCollection.findOne( { _id : new ObjectId(decoded.id) }, (err, user) => {
+        
+            if (err){
+                console.log("findOne error");
+                invalidFunction();
+                return;
+            }
+            if (!user) {
+                console.log("user null");
+                invalidFunction();
+                return;
+            }
             
          validFunction();
         });
