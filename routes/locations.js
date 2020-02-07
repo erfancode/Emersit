@@ -31,7 +31,14 @@ router.post("/addLocation", function(req, res) {
 
         //check for duplicate insert
         //todo
-        locationCollection.insertOne(data, function(err) {
+
+        var dbIn = {
+            type: data.type,
+            properties: data.properties,
+            geometry : data.geometry
+        };
+
+        locationCollection.insertOne(dbIn, function(err) {
             if (err) throw err;
             console.log("1 location inserted");
             return res.status(200).json({ status : 200, description: 'Location inserted successfully' });
@@ -53,7 +60,7 @@ router.get("/getLocations", function(req, res, next) {
     user.isValidToken(token, function(){
         locationCollection.find({}).toArray(function(err, result) {
             if (err) throw err;
-            return res.status(200).json({ locations : result, status : 200, description: '' });
+            return res.status(200).json({ features : result, status : 200, description: '' });
           });
     }, 
     function(){
