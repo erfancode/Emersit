@@ -2,12 +2,15 @@ var express = require('express');
 var router = express.Router();
 const db = require("../db");
 
+var jwt = require('jsonwebtoken');
+var bcrypt = require('bcryptjs');
+var config = require('../config');
+
 var UserCollection;
-var tokens = [];
 
 setTimeout(function() {
     readCollection();
-},5000);
+},10000);
 
 function readCollection(){
     db.getCollection('Users', function(dbCollection) { 
@@ -29,19 +32,29 @@ router.post("/login", function(req, res) {
     console.log(reqPassword + ' ' + reqUsername)
 
     if(UserCollection != null){
-        UserCollection.findOne({username : reqUsername, password : reqPassword}, (err, result) => {
+        UserCollection.findOne({username : reqUsername}, (err, user) => {
             if (err) 
-                throw err;
+                return res.json({ user: null, status : 500, description : 'Error on the server' })
             //read password and check it
             //return user not found or build a a token and retrun user imformation
-            if(result != null){
-                var token = reqUsername + reqPassword;
-                tokens.push(token)
-                result.token = token
-                return res.json({ user: result, status : 200, description : 'Login successfully' })
+            if(user != null){
+
+                var passwordIsValid = bcrypt.compareSync(reqPassword, user.password);
+
+                if(!passwordIsValid){
+                    return res.json({ user: null, status : 201, description : 'Invalid username or password' })
+                }
+
+                var token = jwt.sign({ id: user._id }, config.secret, {
+                    expiresIn: 86400 // expires in 24 hours
+                });
+
+                user.password = null
+                user.token = token
+                return res.json({ user: user, status : 202, description : 'Login successfully' })
             }
             else{
-                return res.json({ user: result, status : 200, description : 'Invalid username or password' })
+                return res.json({ user: result, status : 203, description : 'Invalid username or password' })
             }
             
         })
@@ -63,11 +76,7 @@ router.get("/logout", function(req, res, next) {
     var token = req.headers.token;
 
     if(UserCollection != null){
-        var index = tokens.indexOf(token)
-
-        if(index > -1){
-            tokens.pop(token)
-        }
+        
         return res.status(200).json({ status : 200, description: 'Logout successfully' });
     }
     else{
@@ -77,13 +86,28 @@ router.get("/logout", function(req, res, next) {
 });
 
 function isValidToken(token, validFunction, invalidFunction){
-    const index = tokens.indexOf(token)
-    if(index > -1){
-        validFunction()
-    }
-    else{
-        invalidFunction()
-    }
+
+    jwt.verify(token, config.secret, function(err, decoded) {
+        if (err) {
+            invalidFunction();
+            return
+        }
+        
+        UserCollection.findById(decoded.id, 
+        { password: 0 }, // projection
+        function (err, user) {
+          if (err){
+            invalidFunction();
+            return
+        }
+          if (!user) {
+            invalidFunction();
+            return
+        }
+            
+         validFunction();
+        });
+      });
 }
 
 module.exports = {

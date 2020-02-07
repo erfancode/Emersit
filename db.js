@@ -4,7 +4,7 @@ const dbConnectionUrl = "mongodb+srv://erfancode:0ahwyCZjbUFjq5BF@internetengine
 
 var DB;
 
-MongoClient.connect(dbConnectionUrl, function(err, dbInstance) {
+MongoClient.connect(dbConnectionUrl, { useUnifiedTopology: true } , function(err, dbInstance) {
     if (err) {
         console.log(`[MongoDB connection] ERROR: ${err}`);
     } else {

@@ -7,7 +7,7 @@ var appliedFormsCollection;
 
 setTimeout(function() {
     readCollection();
-},5000);
+},10000);
 
 function readCollection(){
     db.getCollection('AppliedForms', function(dbCollection) { 
